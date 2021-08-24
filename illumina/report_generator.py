@@ -7,12 +7,20 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from iplotter import ChartJSPlotter
 from iplotter import GCPlotter
 
-def read_bcl2fastq_stats_data_from_pandas(x):
+def read_bcl2fastq_stats_data_from_pandas(data: dict) -> [list, list, list]:
+    '''
+    A function for parsing Stats.json files from Illumina BCL2Fastq output
+
+    :param data: A dictionary containing the following keys
+        * ConversionResults
+        * UnknownBarcodes
+    :returns: Three lists
+    '''
     try:
         row_l = list()
         row_s = list()
         unknown_df = list()
-        for i in x.get('ConversionResults'):
+        for i in data.get('ConversionResults'):
             lane_number = i.get('LaneNumber')
             total_cluster_raw = i.get('TotalClustersRaw')
             total_cluster_pf = i.get('TotalClustersPF')
@@ -48,7 +56,7 @@ def read_bcl2fastq_stats_data_from_pandas(x):
                     'Yield_q30': yield_q30,
                     'Yield': int(yield_val),
                     'Qual_score_sum': qual_score_sum})
-        for unknown_entry in x['UnknownBarcodes']:
+        for unknown_entry in data.get('UnknownBarcodes'):
             lane_id = unknown_entry.get('Lane')
             barcodes = unknown_entry.get('Barcodes')
             for barcode, read in barcodes.items():
@@ -63,6 +71,12 @@ def read_bcl2fastq_stats_data_from_pandas(x):
 
 
 def read_data_via_pandas(data_path: list) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    '''
+    A function for reading list of Stats.json files from Illumina BCL2FASTQ output
+
+    :param data_path: A list of Stats.json file paths
+    :returns: Three Pandas DataFrames
+    '''
     try:
         summary_records = pd.DataFrame()
         sample_records = pd.DataFrame()
@@ -85,6 +99,13 @@ def read_data_via_pandas(data_path: list) -> [pd.DataFrame, pd.DataFrame, pd.Dat
 
 
 def get_stats_summary_table(sum_df: pd.DataFrame, lane_sample_df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    A function for calculating the summary table for de-multiplexing
+
+    :param sum_df: A Pandas DataFrame containing summary data
+    :param lane_sample_df: A Pandas DataFrame containing sample data
+    :returns: A Pandas DataFrame containing the merged data table
+    '''
     try:
         records = list()
         for (lane_id, sample_id), l_data in lane_sample_df.groupby(['Lane', 'Sample_ID']):
@@ -112,39 +133,14 @@ def get_stats_summary_table(sum_df: pd.DataFrame, lane_sample_df: pd.DataFrame) 
     except Exception as e:
         logging.error(e)
         raise ValueError(e)
-
-
-def get_stats_summary_table(sum_df: pd.DataFrame, lane_sample_df: pd.DataFrame) -> pd.DataFrame:
-    try:
-        records = list()
-        for (lane_id, sample_id), l_data in lane_sample_df.groupby(['Lane', 'Sample_ID']):
-            sample_name = l_data['Sample_Name'].values[0]
-            index_seq = l_data['Index_seq'].values[0]
-            total_reads = l_data['Num_reads'].sum()
-            perfect_barcodes = l_data['Perfect_barcode'].sum()
-            total_yield = l_data['Yield'].sum()
-            yield_q30 = l_data['Yield_q30'].sum()
-            qual_score_sum = l_data['Qual_score_sum'].sum()
-            total_pf_count = sum_df[sum_df['Lane'] == lane_id]['Total_cluster_pf'].values[0]
-            records.append({
-                'Lane': lane_id,
-                'Sample_ID': sample_id,
-                'Sample_Name': sample_name,
-                'Barcode sequence': index_seq,
-                'PF Clusters': '{:,}'.format(total_reads),
-                '% of the lane': '{0:.2f}'.format(total_reads / total_pf_count * 100),
-                '% Perfect barcode': '{0:.2f}'.format(perfect_barcodes / total_reads * 100),
-                'Yield (Mbases)': '{:,.2f}'.format(total_yield / 10**6),
-                '% >= Q30 bases': '{0:.2f}'.format(yield_q30 / total_yield * 100),
-                'Mean Quality Score': '{0:.2f}'.format(qual_score_sum / total_yield)})
-        records = pd.DataFrame(records)
-        return records
-    except Exception as e:
-        logging.error(e)
-        raise ValueError(e)
-
 
 def get_samplesheet_records(samplesheets: list) -> pd.DataFrame:
+    '''
+    A function for parsing a list of samplesheet files
+
+    :param samplesheets: A list of samplesheet files
+    :returns: A Pandas DataFrame containing all the samplesheet data
+    '''
     try:
         all_samplesheet_data = pd.DataFrame()
         for f in samplesheets:
@@ -157,8 +153,14 @@ def get_samplesheet_records(samplesheets: list) -> pd.DataFrame:
                         continue
                     if data_section:
                         samplesheet_data_list.append(i.strip().split(','))
-                samplesheet = pd.DataFrame(samplesheet_data_list[1:], columns=samplesheet_data_list[0])
-                all_samplesheet_data = pd.concat([all_samplesheet_data, samplesheet], ignore_index=True)
+                samplesheet = \
+                    pd.DataFrame(
+                        samplesheet_data_list[1:],
+                        columns=samplesheet_data_list[0])
+                all_samplesheet_data = \
+                    pd.concat(
+                        [all_samplesheet_data, samplesheet],
+                        ignore_index=True)
         return all_samplesheet_data
     except Exception as e:
         logging.error(e)
@@ -166,9 +168,18 @@ def get_samplesheet_records(samplesheets: list) -> pd.DataFrame:
 
 
 def get_flowcell_summary_plots(
-        summary_data: pd.DataFrame, bg_colors: list, border_colors: list,
-        div1_id:str='chart1', div2_id:str='chart2', width:int=400, height:int=400) -> \
-        [str, str]:
+        summary_data: pd.DataFrame, div1_id:str='chart1', div2_id:str='chart2',
+        width:int=400, height:int=400) -> [str, str]:
+    '''
+    A function for plotting de-multiplexing summary
+
+    :param summary_data: A Pandas DataFrame containing summary data
+    :param div1_id: Div id for plot1, default 'chart1'
+    :param div2_id: Div id for plot2, default 'chart2'
+    :param width: Plot width, default 400
+    :param height: Plot height, default 400
+    :returns: Two strings containing the HTML plots
+    '''
     try:
         summary_data['Lane'] = summary_data['Lane'].astype(str)
         summary_data['Total_cluster_raw'] = summary_data['Total_cluster_raw'].astype(int)
@@ -263,6 +274,17 @@ def get_flowcell_summary_plots(
 def get_per_lane_sample_dist_plot(
         sample_data: pd.DataFrame, bg_colors:list, border_colors:list, div_id_prefix:str='chart_lane',
         plot_width:int=800, plot_height:int=600) -> [dict, int]:
+    '''
+    A function for generating per lane sample distribution plot
+
+    :param sample_data: A Pandas DataFrame containing the sample data
+    :param bg_colors: A list of background colors
+    :param border_colors: A list of border colors
+    :param div_id_prefix: Div id prefix for the plots, default 'chart_lane'
+    :param plot_width: Plot width, default 800
+    :param plot_height: Plot height, default 600
+    :returns: A dictionary containing the plot data and an integer for the recalculated plot height value
+    '''
     try:
         # generate sample dis plots
         options = {
