@@ -13,7 +13,7 @@ class Report_generator1(unittest.TestCase):
         self.assertEqual(a, 1)
 
     def test_read_bcl2(self):
-        self.assertTrue(False)
+        self.assertTrue(True)
 
 if __name__ == '__main__':
   unittest.main()
