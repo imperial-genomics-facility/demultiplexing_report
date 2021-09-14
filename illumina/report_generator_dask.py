@@ -1,4 +1,4 @@
-import logging
+import logging, os
 from typing import Tuple, Optional
 import pandas as pd
 import dask.dataframe as dd
@@ -114,8 +114,8 @@ def read_data_via_dask_cluster(
 
 
 def prepare_report_using_dask(
-        data_path: list,
-        samplesheets: list,
+        data_path: str,
+        samplesheets: str,
         seqrun_id: str,
         template_path: str,
         output_file: str,
@@ -123,20 +123,28 @@ def prepare_report_using_dask(
         threads_per_worker: Optional[int] = 1,
         memory_limit: Optional[str] = '1GB') -> None:
     try:
+        if not os.path.exists(data_path) or \
+           not os.path.exists(samplesheets):
+           raise IOError('Stats.josn or SampleSheet.csv files not found')
         cluster = \
             get_local_dask_cluster(
                 n_workers=n_workers,
                 threads_per_worker=threads_per_worker,
                 memory_limit=memory_limit)                                      # get dask cluster
+        with open(data_path, 'r') as fp:
+            stats_jsons = [f.strip() for f in fp]
+        with open(samplesheets, 'r') as fp:
+            samplesheet_csvs = [f.strip() for f in fp]
         sum_df, lane_sample_df, undetermined_data = \
             read_data_via_dask_cluster(
-                data_path=data_path)                                            # read files using dask cluster
+                data_path=stats_jsons,
+                dask_cluster=cluster)                                           # read files using dask cluster
         cluster.close()                                                         # close dask cluster
         combine_data_and_create_report(
             sum_df=sum_df,
             lane_sample_df=lane_sample_df,
             undetermined_data=undetermined_data,
-            samplesheets=samplesheets,
+            samplesheets=samplesheet_csvs,
             seqrun_id=seqrun_id,
             template_path=template_path,
             output_file=output_file)

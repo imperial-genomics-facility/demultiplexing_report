@@ -288,7 +288,7 @@ def get_per_lane_sample_dist_plot(
         border_colors: list,
         div_id_prefix: Optional[str] = 'chart_lane',
         plot_width: Optional[int] = 800,
-        plot_height: Optional[int] = 600) -> \
+        plot_height: Optional[int] = 400) -> \
         Tuple[dict, int]:
     '''
     A function for generating per lane sample distribution plot
@@ -298,7 +298,7 @@ def get_per_lane_sample_dist_plot(
     :param border_colors: A list of border colors
     :param div_id_prefix: Div id prefix for the plots, default 'chart_lane'
     :param plot_width: Plot width, default 800
-    :param plot_height: Plot height, default 600
+    :param plot_height: Plot height, default 400
     :returns: A dictionary containing the plot data and an integer for the recalculated plot height value
     '''
     try:
@@ -708,20 +708,27 @@ def combine_data_and_create_report(
 
 
 def prepare_report_using_pandas(
-        data_path: list,
-        samplesheets: list,
+        data_path: str,
+        samplesheets: str,
         seqrun_id: str,
         template_path: str,
         output_file: str) -> None:
     try:
+        if not os.path.exists(data_path) or \
+           not os.path.exists(samplesheets):
+           raise IOError('Stats.josn or SampleSheet.csv files not found')
+        with open(data_path, 'r') as fp:
+            stats_jsons = [f.strip() for f in fp]
+        with open(samplesheets, 'r') as fp:
+            samplesheet_csvs = [f.strip() for f in fp]
         sum_df, lane_sample_df, undetermined_data = \
             read_data_via_pandas(
-                data_path=data_path)
+                data_path=stats_jsons)
         combine_data_and_create_report(
             sum_df=sum_df,
             lane_sample_df=lane_sample_df,
             undetermined_data=undetermined_data,
-            samplesheets=samplesheets,
+            samplesheets=samplesheet_csvs,
             seqrun_id=seqrun_id,
             template_path=template_path,
             output_file=output_file)
