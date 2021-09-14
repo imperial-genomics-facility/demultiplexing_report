@@ -66,7 +66,7 @@
        position: absolute;
        bottom: 0;
        width: 100%;
-       height: 10px; /* Set the fixed height of the footer here */
+       height: 0px; /* Set the fixed height of the footer here */
        line-height: 20px; /* Vertically center the text there */
        background-color: #f5f5f5;
      }
@@ -147,9 +147,6 @@
             {% endfor %}
             </ul>
           </li>
-          <li class="nav-item">
-            <a class="nav-link " href="#undetermined-table">Undetermined barcodes<span class="sr-only"></span></a>
-          </li>
         </ul>
       </nav>
       </div>
@@ -158,10 +155,10 @@
         <h2 id="flowcell-summary-plots">Flowcell summary plots</h2>
         <div>
           <div style="width: 400px; float:left; height:500px;">
-          {{ SUMMARY_PLOT1 }}
+          {{ SUMMARY_PLOT1|safe }}
           </div>
           <div style="width: 400px; float:left; height:500px;">
-          {{ SUMMARY_PLOT2 }}
+          {{ SUMMARY_PLOT2|safe }}
           </div>
         </div>
         <div style="clear:both;" />
@@ -172,12 +169,12 @@
         </div>
         <div>
         <h2 id="project-summary">Project summary</h2>
-        {{ PROJECT_SUMMARY }}
+        {{ PROJECT_SUMMARY|safe }}
         <p />
         </div>
         <div>
         <h2 id="project-summary-plots">Project summary plot</h2>
-        {{ PROJECT_SUMMARY_PLOT }}
+        {{ PROJECT_SUMMARY_PLOT|safe }}
         </div>
         
         <h2 id="sample-table">Sample table and coverage</h2>
@@ -185,7 +182,7 @@
         <div>
         <h3 id="sample_cov-lane-{{ lane_id }}">Lane {{ lane_id }} coverage</h3>
         <div style="width: 800px; height: {{ PLOT_HEIGHT }}px;">
-        {{ LANE_PLOTS[lane_id] }}
+        {{ LANE_PLOTS[lane_id]|safe }}
         </div>
         <h3 id="sample-table-lane-{{ lane_id }}">Lane {{ lane_id }} table</h3>
         <div>
@@ -263,7 +260,7 @@
       <div>
         <h3 id="undetermined-reads-plot-lane-{{ lane_id }}">Lane {{ lane_id }} unknown</h3>
         <h4>Plot</h4>
-        {{ UNDETERMINED_PLOTS[lane_id] }}
+        {{ UNDETERMINED_PLOTS[lane_id]|safe }}
         <p/>
         <h4>Table</h4>
         <div id="un_filter_barcode_div_{{ lane_id }}" style="float:left; margin:10px;"></div>
@@ -272,7 +269,6 @@
         <div style="clear:both;"/>
         <div id="un_table_div_{{ lane_id }}"></div>
       </div>
-      
       <script type='text/javascript'>
           google.charts.load('current', {'packages':['corechart', 'controls']});
           google.charts.setOnLoadCallback(drawDashboard);
@@ -322,7 +318,7 @@
         </div>
         <p/>
         {% endfor %}
-    </main>    
+    </main>
   </div>
   </div>
   <p/>
@@ -331,6 +327,6 @@
     <div class="container-fluid bg-dark text-center fixed-bottom">
       <span class="text-muted">Copyright @ IGF</span>
     </div>
-  </footer>  
+  </footer>
 </body>
 </html>
