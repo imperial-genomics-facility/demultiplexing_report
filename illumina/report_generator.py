@@ -377,7 +377,7 @@ def get_project_summary_html_table(sample_data: pd.DataFrame) -> str:
         raise ValueError(e)
 
 
-def get_demult_per_lane_demult_table_data(sample_data: pd.DataFrame) -> dict:
+def get_per_lane_demult_table_data(sample_data: pd.DataFrame) -> dict:
     try:
         data = list()
         data.append([
@@ -675,7 +675,7 @@ def combine_data_and_create_report(
             get_project_summary_html_table(
                 sample_data=merged_sample_data)
         table_data = \
-            get_demult_per_lane_demult_table_data(
+            get_per_lane_demult_table_data(
                 sample_data=merged_sample_data)
         project_summary_plot = \
             get_flowcell_project_summary_plot(

@@ -8,6 +8,15 @@ from illumina.report_generator import get_stats_summary_table
 from illumina.report_generator import get_samplesheet_records
 from illumina.report_generator import get_flowcell_summary_plots
 from illumina.report_generator import get_per_lane_sample_dist_plot
+from illumina.report_generator import get_project_summary_html_table
+from illumina.report_generator import get_demult_per_lane_demult_table_data
+from illumina.report_generator import get_flowcell_project_summary_plot
+from illumina.report_generator import get_undetermined_plot
+from illumina.report_generator import get_undetermined_table
+from illumina.report_generator import create_demux_html_report
+from illumina.report_generator import combine_data_and_create_report
+from illumina.report_generator import prepare_report_using_pandas
+
 
 class Report_generator1(unittest.TestCase):
     def setUp(self):
