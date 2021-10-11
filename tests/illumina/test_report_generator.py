@@ -1,6 +1,5 @@
-import unittest, json
 import pandas as pd
-import sys
+import unittest, json, sys, os
 #sys.path.append('/home/vmuser/github/demultiplexing_report')
 from illumina.report_generator import read_bcl2fastq_stats_data_from_pandas
 from illumina.report_generator import read_data_via_pandas
@@ -9,7 +8,7 @@ from illumina.report_generator import get_samplesheet_records
 from illumina.report_generator import get_flowcell_summary_plots
 from illumina.report_generator import get_per_lane_sample_dist_plot
 from illumina.report_generator import get_project_summary_html_table
-from illumina.report_generator import get_demult_per_lane_demult_table_data
+from illumina.report_generator import get_per_lane_demult_table_data
 from illumina.report_generator import get_flowcell_project_summary_plot
 from illumina.report_generator import get_undetermined_plot
 from illumina.report_generator import get_undetermined_table
@@ -78,7 +77,7 @@ class Report_generator1(unittest.TestCase):
             len(records.index), 95)
 
     def test_get_flowcell_summary_plots(self):
-        summary_records, sample_records, undetermined_records = \
+        summary_records, _, _ = \
             read_data_via_pandas(data_path=[self.stats_json])
         summary_plot1, summary_plot2 = \
             get_flowcell_summary_plots(
@@ -86,18 +85,172 @@ class Report_generator1(unittest.TestCase):
         self.assertTrue(isinstance(summary_plot1, str))
         self.assertTrue(isinstance(summary_plot2, str))
 
-    def get_per_lane_sample_dist_plot(self):
+    def test_get_per_lane_sample_dist_plot(self):
         bg_colors = ['rgba(75, 192, 192, 0.2)']
         border_colors = ['rgba(75, 192, 192, 1)']
-        _, sample_records, _ = \
+        sum_df, sample_records, _ = \
             read_data_via_pandas(data_path=[self.stats_json])
+        all_samplesheet_data = \
+            get_samplesheet_records([self.samplesheet])
+        sample_data = \
+            get_stats_summary_table(
+                sum_df,
+                sample_records)
+        merged_sample_data = \
+            sample_data.set_index('Sample_ID').\
+            join(
+                all_samplesheet_data.set_index('Sample_ID')['Sample_Project'],
+                how='left').\
+            reset_index().\
+            drop_duplicates()
+        merged_sample_data['PF Clusters'] = \
+            merged_sample_data['PF Clusters'].\
+                map(lambda x: x.replace(',',''))
+        merged_sample_data['PF Clusters'] = \
+            merged_sample_data['PF Clusters'].astype(int)
         lane_plots, plot_height = \
             get_per_lane_sample_dist_plot(
-                sample_data=sample_records,
+                sample_data=merged_sample_data,
                 bg_colors=bg_colors,
                 border_colors=border_colors)
         self.assertTrue(isinstance(lane_plots, dict))
         self.assertEqual(plot_height, 1000)
+
+    def test_get_project_summary_html_table(self):
+        sum_df, sample_records, _ = \
+            read_data_via_pandas(data_path=[self.stats_json])
+        all_samplesheet_data = \
+            get_samplesheet_records([self.samplesheet])
+        sample_data = \
+            get_stats_summary_table(
+                sum_df,
+                sample_records)
+        merged_sample_data = \
+            sample_data.set_index('Sample_ID').\
+            join(
+                all_samplesheet_data.set_index('Sample_ID')['Sample_Project'],
+                how='left').\
+            reset_index().\
+            drop_duplicates()
+        merged_sample_data['PF Clusters'] = \
+            merged_sample_data['PF Clusters'].\
+                map(lambda x: x.replace(',',''))
+        merged_sample_data['PF Clusters'] = \
+            merged_sample_data['PF Clusters'].astype(int)
+        project_summary_data = \
+            get_project_summary_html_table(
+                sample_data=merged_sample_data)
+        self.assertEqual(type(project_summary_data), str)
+        self.assertTrue('<td>IGFQ001220</td>' in project_summary_data)
+
+    def test_get_per_lane_demult_table_data(self):
+        sum_df, sample_records, _ = \
+            read_data_via_pandas(data_path=[self.stats_json])
+        all_samplesheet_data = \
+            get_samplesheet_records([self.samplesheet])
+        sample_data = \
+            get_stats_summary_table(
+                sum_df,
+                sample_records)
+        merged_sample_data = \
+            sample_data.set_index('Sample_ID').\
+            join(
+                all_samplesheet_data.set_index('Sample_ID')['Sample_Project'],
+                how='left').\
+            reset_index().\
+            drop_duplicates()
+        merged_sample_data['PF Clusters'] = \
+            merged_sample_data['PF Clusters'].\
+                map(lambda x: x.replace(',',''))
+        merged_sample_data['PF Clusters'] = \
+            merged_sample_data['PF Clusters'].astype(int)
+        table_data = \
+            get_per_lane_demult_table_data(
+                sample_data=merged_sample_data)
+        self.assertTrue(isinstance(table_data, dict))
+        self.assertEqual(len(table_data.keys()), 1)
+        self.assertTrue(1 in table_data.keys())
+
+    def test_get_flowcell_project_summary_plot(self):
+        sum_df, sample_records, _ = \
+            read_data_via_pandas(data_path=[self.stats_json])
+        all_samplesheet_data = \
+            get_samplesheet_records([self.samplesheet])
+        sample_data = \
+            get_stats_summary_table(
+                sum_df,
+                sample_records)
+        merged_sample_data = \
+            sample_data.set_index('Sample_ID').\
+            join(
+                all_samplesheet_data.set_index('Sample_ID')['Sample_Project'],
+                how='left').\
+            reset_index().\
+            drop_duplicates()
+        merged_sample_data['PF Clusters'] = \
+            merged_sample_data['PF Clusters'].\
+                map(lambda x: x.replace(',',''))
+        merged_sample_data['PF Clusters'] = \
+            merged_sample_data['PF Clusters'].astype(int)
+        project_summary_plot = \
+            get_flowcell_project_summary_plot(
+                summary_data=sum_df,
+                sample_data=merged_sample_data)
+        self.assertTrue(isinstance(project_summary_plot, str))
+
+    def test_get_undetermined_plot(self):
+        _, _, undetermined_data = \
+            read_data_via_pandas(data_path=[self.stats_json])
+        bg_colors = ['rgba(75, 192, 192, 0.2)']
+        border_colors = ['rgba(75, 192, 192, 1)']
+        undetermined_plots = \
+            get_undetermined_plot(
+                undetermined_data=undetermined_data,
+                bg_colors=bg_colors,
+                border_colors=border_colors)
+        self.assertTrue(isinstance(undetermined_plots, dict))
+        self.assertTrue(1 in undetermined_plots.keys())
+
+    def test_get_undetermined_table(self):
+        _, _, undetermined_data = \
+            read_data_via_pandas(data_path=[self.stats_json])
+        undetermined_tables = \
+            get_undetermined_table(
+                undetermined_data=undetermined_data)
+        self.assertTrue(isinstance(undetermined_tables, dict))
+        self.assertTrue(1 in undetermined_tables.keys())
+
+    def test_create_demux_html_report(self):
+        sum_df, lane_sample_df, undetermined_data = \
+            read_data_via_pandas(data_path=[self.stats_json])
+        if os.path.exists('/tmp/t1.html'):
+            os.remove('/tmp/t1.html')
+        combine_data_and_create_report(
+            sum_df=sum_df,
+            lane_sample_df=lane_sample_df,
+            undetermined_data=undetermined_data,
+            samplesheets=[self.samplesheet],
+            seqrun_id='TEST 1',
+            template_path='template/illumina_report_v1.html',
+            output_file='/tmp/t1.html')
+        self.assertTrue(os.path.exists('/tmp/t1.html'))
+
+    def test_prepare_report_using_pandas(self):
+        samplesheet_list = '/tmp/samplesheet_list.csv'
+        stats_json_list = '/tmp/stats_json.csv'
+        if os.path.exists('/tmp/t1.html'):
+            os.remove('/tmp/t1.html')
+        with open(samplesheet_list, 'w') as fp:
+            fp.write(self.samplesheet)
+        with open(stats_json_list, 'w') as fp:
+            fp.write(self.stats_json)
+        prepare_report_using_pandas(
+            data_path=stats_json_list,
+            samplesheets=samplesheet_list,
+            seqrun_id='TEST 1',
+            template_path='template/illumina_report_v1.html',
+            output_file='/tmp/t1.html')
+        self.assertTrue(os.path.exists('/tmp/t1.html'))
 
 if __name__ == '__main__':
   unittest.main()
