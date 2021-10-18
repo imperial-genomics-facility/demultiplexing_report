@@ -1,6 +1,7 @@
 import logging, os
 from typing import Tuple, Optional
 import pandas as pd
+import dask
 import dask.dataframe as dd
 from dask.distributed import Client
 from dask.distributed import LocalCluster
@@ -62,52 +63,64 @@ def read_bcl2fastq_stats_data_using_dask(x: dict) -> Tuple[list, list, list]:
         raise ValueError(e)
 
 
-def get_local_dask_cluster(
-        n_workers: Optional[int] = 4,
-        threads_per_worker: Optional[int] = 1,
-        memory_limit: Optional[str] = '1GB') -> LocalCluster:
-    try:
-        cluster = \
-            LocalCluster(
-                n_workers=n_workers,
-                threads_per_worker=threads_per_worker,
-                memory_limit=memory_limit)
-        return cluster
-    except Exception as e:
-        logging.error(e)
-        raise ValueError(e)
+# def get_local_dask_cluster(
+#         n_workers: Optional[int] = 4,
+#         threads_per_worker: Optional[int] = 1,
+#         memory_limit: Optional[str] = '1GB') -> LocalCluster:
+#     try:
+#         cluster = \
+#             LocalCluster(
+#                 n_workers=n_workers,
+#                 processes=True,
+#                 threads_per_worker=threads_per_worker,
+#                 memory_limit=memory_limit)
+#         return cluster
+#     except Exception as e:
+#         logging.error(e)
+#         raise ValueError(e)
 
 
 def read_data_via_dask_cluster(
         data_path: list,
-        dask_cluster: LocalCluster) -> \
+        temp_dir: str,
+        n_workers: Optional[int] = 4,
+        threads_per_worker: Optional[int] = 1,
+        memory_limit: Optional[str] = '1GB') -> \
         Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     try:
-        client = \
-            Client(dask_cluster)
-        df_all = dd.read_json(data_path, orient='columns')
-        df_all = df_all.compute()
-        all_pdf = \
-            df_all.apply(
-                read_bcl2fastq_stats_data_using_dask,
-                axis=1,
-                result_type='expand')
-        lane_df = \
-            pd.DataFrame([v[0] for v in all_pdf[0].values])
-        sum_df = \
-            lane_df.groupby('Lane').agg(sum)
-        sum_df = \
-            sum_df.reset_index()
-        lane_sample_df = \
-            pd.DataFrame([w for v in all_pdf[1].values for w in v])
-        lane_unknown_df = \
-            pd.DataFrame([w for v in all_pdf[2].values for w in v])
-        undetermined_data = \
-            lane_unknown_df.groupby(['Lane','Barcode']).agg(sum)
-        undetermined_data = \
-            undetermined_data.reset_index()
-        client.close()
-        return sum_df, lane_sample_df, undetermined_data
+        # client = \
+        #     Client(dask_cluster)
+        if not os.path.exists(temp_dir):
+            raise IOError("Path {0} doesn't exists".format(temp_dir))
+        with LocalCluster(
+               n_workers=n_workers,
+               processes=False,
+               threads_per_worker=threads_per_worker,
+               local_dir=temp_dir,
+               memory_limit=memory_limit) as cluster, Client(cluster) as client:
+            # dask.config.set({'temporary_directory': temp_dir})
+            df_all = dd.read_json(data_path, orient='columns')
+            df_all = df_all.compute()
+            all_pdf = \
+                df_all.apply(
+                    read_bcl2fastq_stats_data_using_dask,
+                    axis=1,
+                    result_type='expand')
+            lane_df = \
+                pd.DataFrame([v[0] for v in all_pdf[0].values])
+            sum_df = \
+                lane_df.groupby('Lane').agg(sum)
+            sum_df = \
+                sum_df.reset_index()
+            lane_sample_df = \
+                pd.DataFrame([w for v in all_pdf[1].values for w in v])
+            lane_unknown_df = \
+                pd.DataFrame([w for v in all_pdf[2].values for w in v])
+            undetermined_data = \
+                lane_unknown_df.groupby(['Lane','Barcode']).agg(sum)
+            undetermined_data = \
+                undetermined_data.reset_index()
+            return sum_df, lane_sample_df, undetermined_data
     except Exception as e:
         logging.error(e)
         raise ValueError(e)
@@ -119,6 +132,7 @@ def prepare_report_using_dask(
         seqrun_id: str,
         template_path: str,
         output_file: str,
+        temp_dir: str,
         n_workers: Optional[int] = 4,
         threads_per_worker: Optional[int] = 1,
         memory_limit: Optional[str] = '1GB') -> None:
@@ -126,11 +140,11 @@ def prepare_report_using_dask(
         if not os.path.exists(data_path) or \
            not os.path.exists(samplesheets):
            raise IOError('Stats.josn or SampleSheet.csv files not found')
-        cluster = \
-            get_local_dask_cluster(
-                n_workers=n_workers,
-                threads_per_worker=threads_per_worker,
-                memory_limit=memory_limit)                                      # get dask cluster
+        # cluster = \
+        #     get_local_dask_cluster(
+        #         n_workers=n_workers,
+        #         threads_per_worker=threads_per_worker,
+        #         memory_limit=memory_limit)                                      # get dask cluster
         with open(data_path, 'r') as fp:
             stats_jsons = [f.strip() for f in fp]
         with open(samplesheets, 'r') as fp:
@@ -138,8 +152,12 @@ def prepare_report_using_dask(
         sum_df, lane_sample_df, undetermined_data = \
             read_data_via_dask_cluster(
                 data_path=stats_jsons,
-                dask_cluster=cluster)                                           # read files using dask cluster
-        cluster.close()                                                         # close dask cluster
+                n_workers=n_workers,
+                temp_dir=temp_dir,
+                threads_per_worker=threads_per_worker,
+                memory_limit=memory_limit)
+                # dask_cluster=cluster)                                           # read files using dask cluster
+        # cluster.close()                                                         # close dask cluster
         combine_data_and_create_report(
             sum_df=sum_df,
             lane_sample_df=lane_sample_df,
