@@ -1,5 +1,5 @@
 import argparse
-from ..illumina.report_generator import prepare_report_using_pandas
+from illumina.report_generator import prepare_report_using_pandas
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i','--seqrun_id', required=True, help='Sequencing run id')
