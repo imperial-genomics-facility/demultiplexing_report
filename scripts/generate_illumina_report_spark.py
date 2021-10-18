@@ -25,6 +25,6 @@ if __name__=='__main__':
         samplesheets=samplesheet_files,
         seqrun_id=seqrun_id,
         template_path=template,
-        n_workers=threads,
-        memory_limit=memory_limit,
+        threads=threads,
+        executor_memory_in_gb=memory_limit,
         output_file=output_file)
