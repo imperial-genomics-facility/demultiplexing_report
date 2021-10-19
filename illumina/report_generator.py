@@ -535,6 +535,8 @@ def get_undetermined_plot(
 def get_undetermined_table(undetermined_data: pd.DataFrame) -> dict:
     try:
         udf = pd.DataFrame()
+        undetermined_data['Reads'] = \
+            undetermined_data['Reads'].astype(int)
         for lane_id, l_data in undetermined_data.groupby('Lane'):
             sorted_df = l_data.sort_values('Reads', ascending=False).head(20).copy()
             if len(udf.index) > 0:
