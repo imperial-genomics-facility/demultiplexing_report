@@ -8,7 +8,7 @@ from illumina.report_generator import (
     get_stats_summary_table,
     get_samplesheet_records)
 
-def get_flowcell_summary_data(summary_data: pd.DataFrame) -> Tuple[list, list, list, list]:
+def get_flowcell_summary_data(summary_data):
     """
     A function for flowcell summary table
 
@@ -33,7 +33,7 @@ def get_flowcell_summary_data(summary_data: pd.DataFrame) -> Tuple[list, list, l
         raise ValueError("Failed to get flowcell summary data, error: {0}".format(e))
 
 
-def get_per_lane_sample_dist_plot(sample_data: pd.DataFrame) -> dict:
+def get_per_lane_sample_dist_plot(sample_data):
     """
     A function for returing sample distribution plots
 
@@ -64,7 +64,7 @@ def get_per_lane_sample_dist_plot(sample_data: pd.DataFrame) -> dict:
         raise ValueError("Failed to get sample distribution data, error: {0}".format(e))
 
 
-def get_project_summary_html_table(sample_data: pd.DataFrame) -> str:
+def get_project_summary_html_table(sample_data):
     """
     A function for generating project summary html table
 
@@ -86,7 +86,7 @@ def get_project_summary_html_table(sample_data: pd.DataFrame) -> str:
         raise ValueError("Failed to get flowcell summary table, error: {0}".format(e))
 
 
-def get_per_lane_demult_table_data(sample_data: pd.DataFrame) -> dict:
+def get_per_lane_demult_table_data(sample_data):
     """
     A function for generating de-multiplexing table data
 
@@ -124,7 +124,7 @@ def get_per_lane_demult_table_data(sample_data: pd.DataFrame) -> dict:
         raise ValueError("Failed to get de-multiplexing table data, error: {0}".format(e))
 
 
-def get_flowcell_project_summary_plot_for_db(summary_data: pd.DataFrame, sample_data: pd.DataFrame) -> dict:
+def get_flowcell_project_summary_plot_for_db(summary_data, sample_data):
     """
     A function for getting flowcell summary plots
 
@@ -170,7 +170,7 @@ def get_flowcell_project_summary_plot_for_db(summary_data: pd.DataFrame, sample_
         raise ValueError("Failed to get flowcell summary plot, error: {0}".format(e))
 
 
-def get_undetermined_table(undetermined_data: pd.DataFrame) -> dict:
+def get_undetermined_table(undetermined_data):
     """
     A function for creating undetermined data table
 
@@ -221,7 +221,7 @@ def get_undetermined_table(undetermined_data: pd.DataFrame) -> dict:
         raise ValueError("Failed to get undetermined table data, error: {0}".format(e))
 
 
-def get_undetermined_plot(undetermined_data: pd.DataFrame, barcode_limit: int=20) -> dict:
+def get_undetermined_plot(undetermined_data, barcode_limit=20):
     """
     A function got getting undteremined plot data
 
@@ -250,8 +250,8 @@ def get_undetermined_plot(undetermined_data: pd.DataFrame, barcode_limit: int=20
 
 
 def create_plot_json_for_database(
-        run_name: str, samplesheet_tag: str, stat_files: str,
-        samplesheet_files: list, output_dir: str) -> None:
+        run_name, samplesheet_tag, stat_files,
+        samplesheet_files, output_dir):
     """
     A function for creating json de-multiplexing report data
 
