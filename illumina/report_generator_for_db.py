@@ -274,6 +274,8 @@ def create_plot_json_for_database(
                         format(final_json_file))
         with open(stat_files, 'r') as fp:
             stats_jsons = [f.strip() for f in fp]
+        with open(samplesheet_files, 'r') as fp:
+            samplesheet_list = [f.strip() for f in fp]
         sum_df, lane_sample_df, undetermined_data = \
             read_data_via_pandas(
                 data_path=stats_jsons)
@@ -282,7 +284,7 @@ def create_plot_json_for_database(
                 sum_df,
                 lane_sample_df)
         all_samplesheet_data = \
-            get_samplesheet_records(samplesheet_files)
+            get_samplesheet_records(samplesheet_list)
         merged_sample_data = \
             sample_data.set_index('Sample_ID').\
             join(
@@ -337,6 +339,8 @@ def create_plot_json_for_database(
                     '{0}_{1}.json'.format(run_name, samplesheet_tag))
             with open(temp_json_file, 'w') as fp:
                 json.dump(json_data, fp)
+            print(temp_json_file)
+            print(final_json_file)
             copy2(temp_json_file, final_json_file)
     except Exception as e:
         raise ValueError("Failed to create json output, error: {0}".format(e))
