@@ -20,6 +20,7 @@ def get_flowcell_summary_data(summary_data):
         summary_data['Lane'] = summary_data['Lane'].astype(str)
         summary_data['Total_cluster_raw'] = summary_data['Total_cluster_raw'].astype(int)
         summary_data['Total_cluster_pf'] = summary_data['Total_cluster_pf'].astype(int)
+        summary_data["Total_cluster_raw"] = summary_data["Total_cluster_raw"] /2
         labels = \
             summary_data['Lane'].map(lambda x: 'Lane {0}'.format(x)).values.tolist()
         total_cluster_raw = \
@@ -145,9 +146,10 @@ def get_flowcell_project_summary_plot_for_db(summary_data, sample_data):
             lane_project_pf_counts.\
                 set_index('Lane').\
                 join(summary_data.set_index('Lane'), how='left')
+        m_df.fillna(0, inplace=True)
         ld = list()
         for lane_id, l_data in m_df.groupby('Lane'):
-            lane_pf_count = 0 
+            lane_pf_count = 0
             row_data = {'Lane': 'Lane {0}'.format(lane_id)}
             for project_id, p_data in l_data.groupby('Sample_Project'):
                 lane_pf_count += p_data['PF Clusters'].values[0]
@@ -156,13 +158,13 @@ def get_flowcell_project_summary_plot_for_db(summary_data, sample_data):
             ld.append(row_data)
         project_summary_plot = list()
         project_summary_plot.append(pd.DataFrame(ld).columns.tolist())
-        project_summary_plot.extend(pd.DataFrame(ld).values.tolist())
+        project_summary_plot.extend(pd.DataFrame(ld).fillna(0).values.tolist())
         description = {
             c:("string",c) if c=='Lane' else ("number",c)
                 for c in pd.DataFrame(ld).columns.tolist()}
         data_table = gviz_api.DataTable(description)
         data_table.\
-            LoadData(pd.DataFrame(ld).to_dict(orient="records"))
+            LoadData(pd.DataFrame(ld).fillna(0).to_dict(orient="records"))
         plot_data = \
             json.loads(data_table.ToJSon(columns_order=pd.DataFrame(ld).columns.tolist()))
         return plot_data
@@ -297,6 +299,7 @@ def create_plot_json_for_database(
                 map(lambda x: x.replace(',',''))
         merged_sample_data['PF Clusters'] = \
             merged_sample_data['PF Clusters'].astype(int)
+        merged_sample_data.fillna(0, inplace=True)
         (labels, total_cluster_raw, total_cluster_pf, total_yield) = \
             get_flowcell_summary_data(summary_data=sum_df)
         flow_cell_data = {
@@ -326,12 +329,13 @@ def create_plot_json_for_database(
         json_data = {
             'run_name': run_name,
             'samplesheet_tag': samplesheet_tag,
-            'project_summary_data': project_summary_data,
+            'flowcell_cluster_plot': flow_cell_data,
+            'project_summary_table': project_summary_data,
             'project_summary_plot': project_summary_plot,
-            'sample_table_data': table_data,
-            'sample_lane_plots': lane_plots,
-            'undetermined_tables': undetermined_tables,
-            'undetermined_plots': undetermined_plots}
+            'sample_table': table_data,
+            'sample_plot': lane_plots,
+            'undetermined_table': undetermined_tables,
+            'undetermined_plot': undetermined_plots}
         with tempfile.TemporaryDirectory() as temp_dir :
             temp_json_file = \
                 os.path.join(
@@ -339,8 +343,6 @@ def create_plot_json_for_database(
                     '{0}_{1}.json'.format(run_name, samplesheet_tag))
             with open(temp_json_file, 'w') as fp:
                 json.dump(json_data, fp)
-            print(temp_json_file)
-            print(final_json_file)
             copy2(temp_json_file, final_json_file)
     except Exception as e:
         raise ValueError("Failed to create json output, error: {0}".format(e))
