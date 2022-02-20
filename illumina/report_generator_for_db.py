@@ -1,3 +1,4 @@
+import typing
 import pandas as pd
 from typing import Tuple
 import os, json, gviz_api, tempfile
