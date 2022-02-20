@@ -34,7 +34,7 @@ def get_flowcell_summary_data(summary_data):
         raise ValueError("Failed to get flowcell summary data, error: {0}".format(e))
 
 
-def get_per_lane_sample_dist_plot(sample_data):
+def get_per_lane_sample_dist_plot(sample_data, bg_colors, border_colors):
     """
     A function for returing sample distribution plots
 
@@ -46,6 +46,12 @@ def get_per_lane_sample_dist_plot(sample_data):
         for lane_id, l_data in sample_data.groupby('Lane'):
             lane_samples = l_data['Sample_ID'].values.tolist()
             datasets = list()
+            counter = 0
+            project_count = \
+                len(l_data.groupby('Sample_Project').groups.keys())
+            if project_count > len(bg_colors) or \
+               project_count > len(border_colors):
+                raise ValueError("Not enough color codes for project")
             for project_id, p_data in l_data.groupby('Sample_Project'):
                 pf_counts = \
                     p_data.\
@@ -55,7 +61,10 @@ def get_per_lane_sample_dist_plot(sample_data):
                     values.tolist()
                 datasets.append({
                     "label": project_id,
-                    "data": pf_counts})
+                    "data": pf_counts,
+                    "backgroundColor": bg_colors[counter],
+                    "borderColor": border_colors[counter]})
+                counter += 1
             data = {
                 "labels": lane_samples,
                 "datasets": datasets}
@@ -265,6 +274,24 @@ def create_plot_json_for_database(
     :returns: None
     """
     try:
+        bg_colors = [
+            'rgba(255, 99, 132, 0.4)',
+            'rgba(54, 162, 235, 0.4)',
+            'rgba(255, 206, 86, 0.4)',
+            'rgba(75, 192, 192, 0.4)',
+            'rgba(153, 102, 255, 0.4)',
+            'rgba(255, 159, 64, 0.4)',
+            'rgba(255, 159, 10, 0.4)',
+            'rgba(255, 159, 192, 0.4)']
+        border_colors = [
+            'rgba(255, 99, 132, 0.8)',
+            'rgba(54, 162, 235, 0.8)',
+            'rgba(255, 206, 86, 0.8)',
+            'rgba(75, 192, 192, 0.8)',
+            'rgba(153, 102, 255, 0.8)',
+            'rgba(255, 159, 64, 0.8)',
+            'rgba(255, 159, 10, 0.8)',
+            'rgba(255, 159, 192, 0.8)']
         final_json_file = \
             os.path.join(
                 output_dir,
@@ -309,7 +336,9 @@ def create_plot_json_for_database(
             'total_yield': total_yield}
         lane_plots = \
             get_per_lane_sample_dist_plot(
-                sample_data=merged_sample_data)
+                sample_data=merged_sample_data,
+                bg_colors=bg_colors,
+                border_colors=border_colors)
         project_summary_data = \
             get_project_summary_html_table(
                 sample_data=merged_sample_data)
