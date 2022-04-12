@@ -854,15 +854,15 @@ def get_demult_report_and_plots_for_bclconvert(
         combined_unknown_df = \
             combine_bclconvert_top_unknown_barcodes_csv([
                 os.path.join(reports_dir, 'Top_Unknown_Barcodes.csv')])
+        combined_ihop_df = pd.DataFrame()
+        hop_plot = {}
         if os.path.exists(os.path.join(reports_dir, 'Index_Hopping_Counts.csv')):
             combined_ihop_df = \
                 combine_bclconvert_index_hopping_counts_csv([
                     os.path.join(reports_dir, 'Index_Hopping_Counts.csv')])
-            hop_plot = \
-                get_hop_plot(combined_ihop_df)
-        else:
-            combined_ihop_df = pd.DataFrame()
-            hop_plot = pd.DataFrame()
+            if len(combined_ihop_df.index) > 0:
+                hop_plot = \
+                    get_hop_plot(combined_ihop_df)
         samplesheet_df = \
             get_samplesheet_records(
                 samplesheets=[os.path.join(reports_dir, 'SampleSheet.csv')])
