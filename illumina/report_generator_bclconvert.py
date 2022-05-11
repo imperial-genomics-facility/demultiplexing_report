@@ -596,25 +596,40 @@ def get_undetermined_table(
         temp_unknown_df = \
             unknown_df.\
             copy()
+        temp_unknown_df['index_RC'] = \
+            temp_unknown_df['index'].\
+                map(lambda x: x.translate(str.maketrans('ATGC', 'TACG'))[::-1])
         if 'index2' in temp_unknown_df.columns:
+            temp_unknown_df['index2_RC'] = \
+            temp_unknown_df['index2'].\
+                map(lambda x: x.translate(str.maketrans('ATGC', 'TACG'))[::-1])
             temp_unknown_df['Barcode'] = \
                 temp_unknown_df[['index', 'index2']].\
                 agg('-'.join, axis=1)
+            #temp_unknown_df['Barcode_I1_RC'] = \
+            #    temp_unknown_df['index'].\
+            #    str.translate(str.maketrans('ATGC', 'TACG'))[::-1] + \
+            #    '-' + temp_unknown_df['index2']
             temp_unknown_df['Barcode_I1_RC'] = \
-                temp_unknown_df['index'].\
-                str.translate(str.maketrans('ATGC', 'TACG'))[::-1] + \
-                '-' + temp_unknown_df['index2']
+                temp_unknown_df[['index_RC', 'index2']].\
+                agg('-'.join, axis=1)
+            #temp_unknown_df['Barcode_I2_RC'] = \
+            #    temp_unknown_df['index'] + '-' + \
+            #    temp_unknown_df['index2'].\
+            #    str.translate(str.maketrans('ATGC', 'TACG'))[::-1]
             temp_unknown_df['Barcode_I2_RC'] = \
-                temp_unknown_df['index'] + '-' + \
-                temp_unknown_df['index2'].\
-                str.translate(str.maketrans('ATGC', 'TACG'))[::-1]
+                temp_unknown_df[['index', 'index2_RC']].\
+                agg('-'.join, axis=1)
         else:
             temp_unknown_df['Barcode'] = \
                 temp_unknown_df['index'].\
                 copy()
-            temp_unknown_df['Barcode_I1_RC'] = \
-                temp_unknown_df['index'].\
-                str.translate(str.maketrans('ATGC', 'TACG'))[::-1]
+            #temp_unknown_df['Barcode_I1_RC'] = \
+            #    temp_unknown_df['index'].\
+            #    str.translate(str.maketrans('ATGC', 'TACG'))[::-1]
+            temp_unknown_df['Barcode'] = \
+                temp_unknown_df['index_RC'].\
+                copy()
             temp_unknown_df['Barcode_I2_RC'] = ''
         temp_unknown_df = \
             temp_unknown_df[[
