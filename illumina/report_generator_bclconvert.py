@@ -75,6 +75,8 @@ def combine_bclconvert_quality_metrics_csv(quality_metrics_list: list) \
                 raise KeyError(
                     "Missing column {0} in quality_metrics".\
                     format(i))
+        merged_df['index2'] = \
+            merged_df['index2'].fillna('')
         combined_df = \
             merged_df.\
             groupby([
