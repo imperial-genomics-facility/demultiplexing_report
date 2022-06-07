@@ -116,6 +116,8 @@ def combine_bclconvert_top_unknown_barcodes_csv(
                 raise KeyError(
                     "Missing column {0} in quality_metrics".\
                     format(i))
+        merged_df['index2'] = \
+            merged_df['index2'].fillna('')
         combined_df = \
             merged_df.\
             groupby([
