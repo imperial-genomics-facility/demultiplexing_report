@@ -231,64 +231,73 @@ def get_interop_index_stats(
         -> pd.DataFrame:
     try:
         flowcell_summary_data = list()
-        ## FIX ME: copy run/InterOp to temp dir and copy
-        with tempfile.TemporaryDirectory() as temp_dir:
-            source_interop_path = \
-                os.path.join(run_dir, interop_dir_name)
-            target_interop_dir = \
-                os.path.join(temp_dir, interop_dir_name)
-            copytree(
-                source_interop_path,
-                target_interop_dir)
-            for i in os.listdir(run_dir):
-                if i.endswith(".xml"):
-                    source_path = \
-                        os.path.join(run_dir, i)
-                    target_path = \
-                        os.path.join(temp_dir, i)
-                    copy2(source_path, target_path)
-            source_index_file = \
-                os.path.join(reports_dir, index_metrix_file)
-            target_index_file = \
-                os.path.join(temp_dir, interop_dir_name, index_metrix_file)
-            copy2(source_index_file, target_index_file)
+        index_metrix_file_path = \
+            os.path.join(run_dir, interop_dir_name, index_metrix_file)
+        if os.path.exists(index_metrix_file_path):
             index_csv = \
                 subprocess.\
                 check_output([
                     "interop_index-summary",
-                    temp_dir,
+                    run_dir,
                     "--csv=1"])
-            if isinstance(index_csv, bytes):
-                index_csv = index_csv.decode('utf-8')
-            index_csv = index_csv.split("\n")
-            counter = 99
-            key = None
-            lane_data = list()
-            total_reads = dict()
-            for i in index_csv:
-                if i.startswith('Lane'):
-                    counter = 0
-                    key = i.split(",")[0]
-                    if key is not None:
-                        key = key.replace("Lane", "").strip()
-                    lane_data = list()
-                    continue
-                if counter < 2:
-                    lane_data.append(i)
-                    counter += 1
-                if counter == 2:
-                    total_reads.update({key: lane_data})
-            formatted_lane_data = dict()
-            for lane_id, lane_data in total_reads.items():
-                csv_data = StringIO('\n'.join(total_reads.get(lane_id)))
-                data = pd.read_csv(csv_data).to_dict(orient='records')
-                formatted_lane_data.update({lane_id: data})
-            for lane_id, lane_data in formatted_lane_data.items():
-                flowcell_summary_data.\
-                    append({
-                        'Lane': lane_id,
-                        'Total Reads': lane_data[0].get('Total Reads'),
-                        'PF Reads': lane_data[0].get('PF Reads')})
+        else:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                source_interop_path = \
+                    os.path.join(run_dir, interop_dir_name)
+                target_interop_dir = \
+                    os.path.join(temp_dir, interop_dir_name)
+                copytree(
+                    source_interop_path,
+                    target_interop_dir)
+                for i in os.listdir(run_dir):
+                    if i.endswith(".xml"):
+                        source_path = \
+                            os.path.join(run_dir, i)
+                        target_path = \
+                            os.path.join(temp_dir, i)
+                        copy2(source_path, target_path)
+                source_index_file = \
+                    os.path.join(reports_dir, index_metrix_file)
+                target_index_file = \
+                    os.path.join(temp_dir, interop_dir_name, index_metrix_file)
+                copy2(source_index_file, target_index_file)
+                index_csv = \
+                    subprocess.\
+                    check_output([
+                        "interop_index-summary",
+                        temp_dir,
+                        "--csv=1"])
+        if isinstance(index_csv, bytes):
+            index_csv = index_csv.decode('utf-8')
+        index_csv = index_csv.split("\n")
+        counter = 99
+        key = None
+        lane_data = list()
+        total_reads = dict()
+        for i in index_csv:
+            if i.startswith('Lane'):
+                counter = 0
+                key = i.split(",")[0]
+                if key is not None:
+                    key = key.replace("Lane", "").strip()
+                lane_data = list()
+                continue
+            if counter < 2:
+                lane_data.append(i)
+                counter += 1
+            if counter == 2:
+                total_reads.update({key: lane_data})
+        formatted_lane_data = dict()
+        for lane_id, lane_data in total_reads.items():
+            csv_data = StringIO('\n'.join(total_reads.get(lane_id)))
+            data = pd.read_csv(csv_data).to_dict(orient='records')
+            formatted_lane_data.update({lane_id: data})
+        for lane_id, lane_data in formatted_lane_data.items():
+            flowcell_summary_data.\
+                append({
+                    'Lane': lane_id,
+                    'Total Reads': lane_data[0].get('Total Reads'),
+                    'PF Reads': lane_data[0].get('PF Reads')})
         flowcell_summary_data = \
             pd.DataFrame(flowcell_summary_data)
         return flowcell_summary_data
