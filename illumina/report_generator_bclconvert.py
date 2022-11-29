@@ -17,6 +17,7 @@ def combine_bclconvert_demultiplex_stats_csv(demultiplex_stats_list: list) \
             if not os.path.exists(entry):
                 raise IOError('Missing file {0}'.format(entry))
             df = pd.read_csv(entry)
+            df['Index'].fillna('', inplace=True)
             if len(merged_df.index) == 0:
                 merged_df = df.copy()
             else:
