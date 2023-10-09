@@ -136,7 +136,7 @@ def combine_bclconvert_top_unknown_barcodes_csv(
         combined_df = \
             combined_df.\
             sort_values('# Reads', ascending=False).\
-            head(40).\
+            head(200).\
             sort_values([
                 'Lane', '# Reads'], 
                 ascending=False)
